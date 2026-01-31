@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
 ADD https://astral.sh/uv/install.sh /tmp/uv-install.sh
 RUN sh /tmp/uv-install.sh && mv /root/.local/bin/uv /usr/local/bin/uv && rm /tmp/uv-install.sh
 
