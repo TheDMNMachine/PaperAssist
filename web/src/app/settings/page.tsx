@@ -81,7 +81,7 @@ export default function SettingsPage() {
         <p className="text-sm text-gray-400">
           Base URL:{" "}
           <code className="rounded bg-gray-800 px-2 py-0.5">
-            {process.env.NEXT_PUBLIC_API_URL || "http://paperassist.tojest.dev/api"}
+            {process.env.NEXT_PUBLIC_API_URL || "/api"}
           </code>
         </p>
       </section>

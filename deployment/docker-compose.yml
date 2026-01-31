@@ -33,7 +33,7 @@ services:
     image: ghcr.io/thedmnmachine/paperassist-web:latest
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: https://paperassist.tojest.dev/api
+      NEXT_PUBLIC_API_URL: /api
     depends_on:
       - api
     ports:
