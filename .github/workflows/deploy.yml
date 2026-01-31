@@ -23,8 +23,13 @@ jobs:
       - name: Build API Docker image
         run: docker build -t ghcr.io/thedmnmachine/paperassist-api:latest ./api
 
-      - name: Push API Docker image
-        run: docker push ghcr.io/thedmnmachine/paperassist-api:latest
+      - name: Build Web Docker image
+        run: docker build -t ghcr.io/thedmnmachine/paperassist-web:latest ./web
+
+      - name: Push Docker images
+        run: |
+          docker push ghcr.io/thedmnmachine/paperassist-api:latest
+          docker push ghcr.io/thedmnmachine/paperassist-web:latest
 
       - name: Install SSH client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
@@ -59,9 +64,15 @@ jobs:
             # Pull latest images
             docker compose pull
 
-            # Restart services
+            # Restart services (migrations run automatically on API startup)
             docker compose down
             docker compose up -d
+
+            # Wait for services to start
+            sleep 10
+
+            # Health check
+            curl -sf http://localhost/api/health || echo "WARNING: API health check failed"
 
             # Cleanup old images
             docker image prune -f

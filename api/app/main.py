@@ -15,7 +15,7 @@ from app.application.subscribers.screen_subscribers import LogScreenCreatedSubsc
 from app.domain.events.device import DeviceHeartbeatReceivedEvent
 from app.domain.events.screen import ScreenCreatedEvent
 from app.infrastructure.container import init_container
-from app.infrastructure.persistence.database import Base, async_session_factory, engine
+from app.infrastructure.persistence.database import async_session_factory, engine
 from app.infrastructure.persistence.repositories import (
     SqlAlarmRepository,
     SqlDeviceRepository,
@@ -48,8 +48,6 @@ def prepare() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     prepare()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
