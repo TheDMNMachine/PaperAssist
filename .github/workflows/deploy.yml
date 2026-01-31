@@ -10,32 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Install SSH client
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass rsync
-
-      - name: Create directories on VPS
-        run: |
-          sshpass -p "${{ secrets.VPS_HOST_PASSWORD }}" \
-            ssh -o StrictHostKeyChecking=no \
-            -p ${{ secrets.VPS_HOST_PORT }} \
-            root@${{ secrets.VPS_HOST_ADDRESS }} \
-            "mkdir -p /src/paperassist /deployment"
-
-      - name: Upload source code to VPS
-        run: |
-          sshpass -p "${{ secrets.VPS_HOST_PASSWORD }}" \
-            rsync -avz --delete \
-            -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.VPS_HOST_PORT }}" \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='__pycache__' \
-            --exclude='.next' \
-            --exclude='firmware' \
-            --exclude='mobile' \
-            ./ root@${{ secrets.VPS_HOST_ADDRESS }}:/src/paperassist/
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
 
       - name: Create .env on VPS
         run: |
@@ -53,16 +29,24 @@ jobs:
             root@${{ secrets.VPS_HOST_ADDRESS }} << 'DEPLOY'
 
             set -e
-            cd /src/paperassist
 
-            # Build Docker images on VPS
+            # Clone/update repo
+            if [ -d /src/paperassist/.git ]; then
+              cd /src/paperassist && git pull origin main
+            else
+              rm -rf /src/paperassist
+              git clone https://github.com/TheDMNMachine/PaperAssist.git /src/paperassist
+              cd /src/paperassist
+            fi
+
+            # Build Docker images
             docker build -t paperassist-api:latest ./api
             docker build -t paperassist-web:latest ./web
 
-            # Copy deployment config
+            # Prepare deployment
             cp -r deployment/* /deployment/
 
-            # Update docker-compose to use local images
+            # Fix image names in compose (use local, not ghcr)
             cd /deployment
             sed -i 's|ghcr.io/thedmnmachine/paperassist-api:latest|paperassist-api:latest|g' docker-compose.yml
             sed -i 's|ghcr.io/thedmnmachine/paperassist-web:latest|paperassist-web:latest|g' docker-compose.yml
@@ -71,12 +55,11 @@ jobs:
             docker compose down
             docker compose up -d
 
-            # Wait and health check
+            # Health check
             sleep 10
-            curl -sf http://localhost/api/health && echo " — API OK" || echo "WARNING: API health check failed"
+            curl -sf http://localhost/api/health && echo " API OK" || echo "WARNING: API health check failed"
             curl -sf http://localhost/ > /dev/null && echo "Web OK" || echo "WARNING: Web health check failed"
 
-            # Cleanup
             docker image prune -f
 
           DEPLOY
