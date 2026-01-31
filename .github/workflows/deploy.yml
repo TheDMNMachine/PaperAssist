@@ -16,6 +16,14 @@ jobs:
       - name: Install SSH client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass rsync
 
+      - name: Create directories on VPS
+        run: |
+          sshpass -p "${{ secrets.VPS_HOST_PASSWORD }}" \
+            ssh -o StrictHostKeyChecking=no \
+            -p ${{ secrets.VPS_HOST_PORT }} \
+            root@${{ secrets.VPS_HOST_ADDRESS }} \
+            "mkdir -p /src/paperassist /deployment"
+
       - name: Upload source code to VPS
         run: |
           sshpass -p "${{ secrets.VPS_HOST_PASSWORD }}" \
